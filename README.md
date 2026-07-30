@@ -1,5 +1,3 @@
-# Software-Engineering-Structure-Analysis
-
 # Software Engineering Structure Analysis
 
 ## Student
