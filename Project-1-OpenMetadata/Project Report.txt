@@ -1,0 +1,136 @@
+     Project Report
+
+1. Project Overview
+
+The Software Engineering Structure Analysis project focuses on analyzing how well a Large Language Model (LLM) can reconstruct the internal software architecture and design patterns of an existing human-developed software system.
+For this project, the OpenMetadata open-source project was selected as the target repository. OpenMetadata is a large Java-based metadata management and data governance platform. A specific entity persistence and versioning subsystem was selected from the original OpenMetadata source code and studied in detail.
+The main objective was not simply to reproduce the same functionality. Instead, the project investigates whether an LLM can preserve the software structure, abstraction, modularity, dependencies, and design patterns present in the original human-written implementation.
+The repository contains the source files, LLM-generated reconstruction attempts, prompts used for generation, design-pattern analysis, file descriptions, and a comparative architecture report.
+
+2. Original Human-Written Code
+
+The human-written system was extracted from an actual historical version of OpenMetadata. The selected subsystem is centered around EntityRepository, which is responsible for entity persistence, retrieval, updating, deletion, and version management.
+The original implementation contains several architectural abstractions:
+•	An abstract EntityRepository<T>
+•	An EntityDao<T> persistence abstraction
+•	An Entity interface
+•	ChangeDescription and FieldChange for representing modifications
+•	An EntityRegistry for resolving repositories based on entity type
+•	An EntityUpdater inner class for update and difference-processing logic
+•	Multiple abstract hooks following a Template Method style
+•	Separation between repository, domain, change-tracking, and registry responsibilities
+The analysis identified four major layers in the human-written design:
+1.	Repository / Persistence Abstraction Layer
+2.	Domain Contract Layer
+3.	Change-Tracking Layer
+4.	Registry Layer
+The human implementation therefore demonstrates a relatively modular architecture where different responsibilities are separated through interfaces, abstract classes, and dedicated components.
+
+3. LLM-Reconstructed Code
+
+After analyzing the original implementation, the same general system was reconstructed using an LLM.
+The reconstruction was performed through multiple prompt iterations rather than using a single prompt. This was done to observe whether increasing the level of instruction and architectural detail would cause the LLM to produce code structurally similar to the original human implementation.
+Iteration 1
+The initial prompt asked the LLM to create a Java system for storing entities such as users and teams with version tracking.
+The generated solution was functional but highly simplified. It mainly used a single class and did not preserve the original system's layered architecture, interfaces, registry abstraction, or structured change-tracking mechanism.
+Iteration 2
+The second prompt introduced additional architectural requirements, including separation of storage logic from entity-type registration and major/minor version tracking.
+This improved the structure somewhat, resulting in two classes. However, the generated components were still tightly coupled and did not introduce the abstraction boundaries found in the original implementation.
+Iteration 3
+The final prompt explicitly requested:
+•	An EntityRepository
+•	A separate DAO interface
+•	A separate EntityRegistry
+•	A structured change-record object
+•	Create, read, update, and delete operations
+•	Version management
+Despite these explicit requirements, the LLM still merged several abstractions into a small number of classes.
+The final LLM reconstruction consisted of L_EntityRepository.java and L_EntityUser.java. It was runnable and implemented the expected basic behavior, but its internal architecture was considerably simpler than the original human-written design.
+
+4. Human Code vs. LLM-Reconstructed Code
+
+The most important finding of the project is that the LLM was relatively successful at reproducing observable behavior, but much less successful at reproducing internal software architecture.
+Human-Written Code
+The human implementation emphasizes:
+•	Abstraction
+•	Modularity
+•	Separation of responsibilities
+•	Interfaces
+•	Extensibility
+•	Design-pattern usage
+•	Dependency inversion
+•	Structured change tracking
+LLM-Reconstructed Code
+The LLM implementation emphasizes:
+•	Functional correctness
+•	Simpler implementation
+•	Fewer files and classes
+•	Direct data manipulation
+•	Concrete data structures
+•	Reduced abstraction
+As a result, the LLM-generated system can perform the major operations, but it does not preserve many of the architectural decisions made by the original developers.
+
+5. Design Pattern Preservation
+
+Four important patterns or architectural techniques were identified in the original system:
+Template Method
+The original EntityRepository defines a common processing flow while allowing subclasses to customize specific operations through abstract methods.
+Generic DAO
+The EntityDao<T> abstraction separates persistence operations from repository-level business logic.
+Registry / Service Locator
+EntityRegistry maps entity types to their corresponding repositories, centralizing repository lookup.
+Value Object for Change Tracking
+FieldChange and ChangeDescription represent changes as structured data rather than embedding all change information directly into procedural logic.
+The LLM reconstruction preserved only a weak version of the registry idea. The other major abstractions were largely collapsed into the implementation.
+
+6. Quantitative Comparison
+
+The project also evaluates the difference between the human and LLM implementations using several architectural metrics.
+Metric	Human Code	LLM Code	Interpretation
+Layer Preservation (LPS)	4 layers	0/4 preserved	Major architectural layers were lost
+Pattern Preservation (PPR)	4 patterns	1/4 preserved	Most design patterns disappeared
+Pattern Collapse (PCR)	—	75%	Three of four patterns collapsed
+Abstraction Loss (ALS)	—	100%	Interfaces/abstract classes were eliminated
+Dependency Inversion (DIS)	1.0	0.0	LLM code depends directly on concrete storage
+God Module Ratio (GMR)	0.0	0.5	One LLM class carries many responsibilities
+Responsibility Entanglement (REI)	≈0.91	3.0	Responsibilities became significantly more concentrated
+Cross-Layer Violations	0	2	LLM implementation mixes architectural responsibilities
+These results show that although the LLM reconstruction retained the main functionality, it experienced significant architectural degradation compared with the human implementation.
+
+7. Overall Analysis
+
+The project demonstrates an important limitation of LLM-based code reconstruction.
+An LLM can often understand the visible behavior of a software component and generate a working implementation. However, reproducing the hidden architectural intent of experienced software developers is substantially more difficult.
+For example, the original DAO interface may not be necessary for the system to work today, but it provides important benefits for future maintenance, testing, replacement of persistence technologies, and extensibility. Similarly, the structured change-tracking classes provide architectural clarity even though their functionality could technically be implemented with simple conditional statements.
+The LLM tends to optimize for producing code that satisfies the requested behavior. Consequently, abstractions whose benefits are primarily related to maintainability, extensibility, and architectural cleanliness can be lost during reconstruction.
+This is the central finding of the project:
+The LLM successfully preserved much of the system's behavior but failed to preserve a significant portion of its architectural structure and design-pattern intent.
+
+8. Important Observation
+One interesting result was that the LLM received a better score for Module Separation (MSI) than the human system. However, this does not mean that the LLM architecture was actually better.
+The reason is that the LLM merged many responsibilities into very few modules. Because MSI measures relationships between separate modules, having fewer modules can artificially improve the score.
+Therefore, metrics such as God Module Ratio, Responsibility Entanglement, Code Smell Density, Abstraction Loss, and Pattern Preservation must also be considered.
+This demonstrates an important lesson in software architecture analysis: a single metric cannot fully represent architectural quality.
+
+9. Overall Project Conclusion
+
+The Software Engineering Structure Analysis project provides a practical comparison between traditional human software engineering and LLM-based code reconstruction.
+The OpenMetadata subsystem demonstrates that human developers intentionally create abstractions, interfaces, layers, and design patterns to make software easier to maintain and extend. The LLM reconstruction was capable of reproducing the core CRUD and versioning behavior, but it simplified the architecture and merged multiple responsibilities into fewer classes.
+Therefore, the project concludes that:
+LLMs are effective at reproducing software behavior, but preserving the deeper architectural structure and design-pattern intent of human-written systems remains challenging.
+The experiment highlights the importance of human architectural knowledge when using LLMs for software maintenance, legacy-code reconstruction, refactoring, and automated code generation.
+
+10. Repository Contents
+The project repository contains the following major materials:
+•	Original/ – original/human-written source material
+•	LLM-Reconstructed/ – reconstructed source code generated using an LLM
+•	Prompt/ – prompts used during the reconstruction process
+•	DesignPatternAnalysis.md – design-pattern and architectural analysis
+•	FileDescriptions.md – descriptions of analyzed files
+•	H_real_EntityRepository_snapshot.java – historical human-written source snapshot
+•	L_EntityRepository.java – final LLM-generated repository implementation
+•	L_EntityUser.java – LLM-generated entity implementation
+•	iteration1_EntitySystem.java – first reconstruction attempt
+•	iteration2_partial.java – second reconstruction attempt
+•	LLM_vs_Human_Architecture_Report.md – detailed comparative analysis
+
